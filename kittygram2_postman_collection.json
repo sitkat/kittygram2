@@ -1,0 +1,298 @@
+{
+  "info": {
+    "name": "Kittygram2 API",
+    "description": "Коллекция запросов для Kittygram2: приюты, коты, сотрудники.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "JWT access-токен. Заполняется автоматически после запроса «Получить токен»."
+    },
+    {
+      "key": "shelter_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "1. Регистрация пользователя",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{base_url}}/auth/users/", "host": ["{{base_url}}"], "path": ["auth", "users", ""]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"testpass123!\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2. Получить JWT-токен",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.access) {",
+                  "  pm.collectionVariables.set('token', json.access);",
+                  "  console.log('Token saved:', json.access);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{base_url}}/auth/jwt/create/", "host": ["{{base_url}}"], "path": ["auth", "jwt", "create", ""]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"testpass123!\"\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Shelters",
+      "item": [
+        {
+          "name": "3. Список приютов (GET, без авторизации, пагинация+поиск)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/shelters/?search=Кот&ordering=-created_at&limit=5&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["shelters", ""],
+              "query": [
+                {"key": "search", "value": "Кот"},
+                {"key": "ordering", "value": "-created_at"},
+                {"key": "limit", "value": "5"},
+                {"key": "offset", "value": "0"}
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4. Создать приют (POST)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) {",
+                  "  pm.collectionVariables.set('shelter_id', json.id);",
+                  "  console.log('shelter_id saved:', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {"raw": "{{base_url}}/shelters/", "host": ["{{base_url}}"], "path": ["shelters", ""]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Котодом\",\n  \"address\": \"ул. Пушистая, 12\",\n  \"phone\": \"+79001234567\",\n  \"capacity\": 30\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5. Получить приют по ID (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/shelters/{{shelter_id}}/",
+              "host": ["{{base_url}}"],
+              "path": ["shelters", "{{shelter_id}}", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6. Обновить приют (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/shelters/{{shelter_id}}/",
+              "host": ["{{base_url}}"],
+              "path": ["shelters", "{{shelter_id}}", ""]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Лучший приют города!\",\n  \"capacity\": 50\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "7. Создать приют — ошибка 400 (неверный телефон)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {"raw": "{{base_url}}/shelters/", "host": ["{{base_url}}"], "path": ["shelters", ""]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Брак\",\n  \"address\": \"ул. Ошибочная, 0\",\n  \"phone\": \"abc\",\n  \"capacity\": 10\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Shelter custom actions",
+      "item": [
+        {
+          "name": "8. Вступить в приют (POST /join/)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/shelters/{{shelter_id}}/join/",
+              "host": ["{{base_url}}"],
+              "path": ["shelters", "{{shelter_id}}", "join", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "9. Список котов приюта (GET /cats/)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/shelters/{{shelter_id}}/cats/",
+              "host": ["{{base_url}}"],
+              "path": ["shelters", "{{shelter_id}}", "cats", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10. Список сотрудников приюта (GET /employees/)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/shelters/{{shelter_id}}/employees/",
+              "host": ["{{base_url}}"],
+              "path": ["shelters", "{{shelter_id}}", "employees", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "11. Добавить сотрудника (POST /employees/) — ошибка 400 (роль owner)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/shelters/{{shelter_id}}/employees/",
+              "host": ["{{base_url}}"],
+              "path": ["shelters", "{{shelter_id}}", "employees", ""]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user\": 2,\n  \"role\": \"owner\"\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Cats",
+      "item": [
+        {
+          "name": "12. Список котов (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{base_url}}/cats/", "host": ["{{base_url}}"], "path": ["cats", ""]}
+          },
+          "response": []
+        },
+        {
+          "name": "13. Создать кота (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {"raw": "{{base_url}}/cats/", "host": ["{{base_url}}"], "path": ["cats", ""]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Барсик\",\n  \"color\": \"Gray\",\n  \"birth_year\": 2020\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Docs",
+      "item": [
+        {
+          "name": "14. Swagger UI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{base_url}}/swagger/", "host": ["{{base_url}}"], "path": ["swagger", ""]}
+          },
+          "response": []
+        },
+        {
+          "name": "15. ReDoc",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{base_url}}/redoc/", "host": ["{{base_url}}"], "path": ["redoc", ""]}
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

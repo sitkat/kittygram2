@@ -3,7 +3,10 @@ from rest_framework.validators import UniqueTogetherValidator
 
 import datetime as dt
 
-from .models import CHOICES, Achievement, AchievementCat, Cat, User
+from .models import (
+    CHOICES, ROLE_CHOICES, Achievement, AchievementCat,
+    Cat, Shelter, ShelterEmployee, User,
+)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -67,4 +70,68 @@ class CatSerializer(serializers.ModelSerializer):
         year = dt.date.today().year
         if not (year - 40 < value <= year):
             raise serializers.ValidationError('Проверьте год рождения!')
+        return value
+
+
+class ShelterEmployeeSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = ShelterEmployee
+        fields = ('id', 'shelter', 'user', 'username', 'role', 'joined_at')
+        read_only_fields = ('shelter', 'joined_at')
+
+    def validate_role(self, value):
+        if value == 'owner':
+            raise serializers.ValidationError(
+                'Роль «владелец» назначается автоматически.')
+        return value
+
+    def validate(self, data):
+        shelter = self.context.get('shelter')
+        user = data.get('user')
+        if shelter and user:
+            if ShelterEmployee.objects.filter(
+                    shelter=shelter, user=user).exists():
+                raise serializers.ValidationError(
+                    'Этот пользователь уже является сотрудником приюта.')
+        return data
+
+
+class ShelterSerializer(serializers.ModelSerializer):
+    owner = serializers.PrimaryKeyRelatedField(
+        read_only=True, default=serializers.CurrentUserDefault())
+    cats = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Cat.objects.all(), required=False)
+    employee_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Shelter
+        fields = (
+            'id', 'name', 'address', 'phone', 'description',
+            'owner', 'cats', 'capacity', 'employee_count', 'created_at')
+        read_only_fields = ('owner', 'created_at')
+
+    def get_employee_count(self, obj):
+        return obj.employees.count()
+
+    def validate_cats(self, value):
+        shelter = self.instance
+        capacity = (
+            self.initial_data.get('capacity')
+            or (shelter.capacity if shelter else 50)
+        )
+        if len(value) > int(capacity):
+            raise serializers.ValidationError(
+                f'Количество котов ({len(value)}) превышает '
+                f'вместимость приюта ({capacity}).')
+        return value
+
+    def validate_capacity(self, value):
+        if value < 1:
+            raise serializers.ValidationError(
+                'Вместимость приюта должна быть минимум 1.')
+        if value > 1000:
+            raise serializers.ValidationError(
+                'Вместимость приюта не может превышать 1000.')
         return value
