@@ -1,43 +1,97 @@
-### Как запустить проект:
+# Kittygram2
 
-Клонировать репозиторий и перейти в него в командной строке:
+REST API для управления котиками: добавление, просмотр, редактирование питомцев, их достижений и владельцев. Построен на Django REST Framework с JWT-аутентификацией.
 
-```
-git clone https://github.com/yandex-praktikum/kittygram2.git
-```
+## Стек технологий
 
-```
+- Python 3.11
+- Django 3.2.3
+- Django REST Framework 3.12.4
+- Djoser 2.1.0 (управление пользователями)
+- Simple JWT 4.8.0 (JWT-аутентификация)
+- SQLite (база данных по умолчанию)
+- Docker / Docker Compose
+
+## Зависимости
+
+Перечень зависимостей находится в файле `requirements.txt`:
+
+| Пакет | Версия |
+|---|---|
+| Django | 3.2.3 |
+| djangorestframework | 3.12.4 |
+| PyJWT | 2.1.0 |
+| djangorestframework-simplejwt | 4.8.0 |
+| djoser | 2.1.0 |
+
+## Как запустить проект локально
+
+### 1. Клонировать репозиторий
+
+```bash
+git clone https://github.com/sitkat/kittygram2.git
 cd kittygram2
 ```
 
-Cоздать и активировать виртуальное окружение:
+### 2. Настроить переменные окружения
 
+Скопировать файл `.env.example` в `.env` и при необходимости изменить значения:
+
+```bash
+cp .env.example .env
 ```
+
+### 3. Запуск через Docker Compose
+
+```bash
+docker compose up --build
+```
+
+Приложение будет доступно по адресу: http://localhost:8000/
+
+### 4. Запуск без Docker (локально)
+
+Создать и активировать виртуальное окружение:
+
+```bash
 python3 -m venv env
+source env/bin/activate  # Linux/macOS
+# env\Scripts\activate   # Windows
 ```
 
-```
-source env/bin/activate
-```
+Обновить pip и установить зависимости:
 
-```
+```bash
 python3 -m pip install --upgrade pip
-```
-
-Установить зависимости из файла requirements.txt:
-
-```
 pip install -r requirements.txt
 ```
 
 Выполнить миграции:
 
-```
+```bash
 python3 manage.py migrate
 ```
 
-Запустить проект:
+Запустить сервер разработки:
 
-```
+```bash
 python3 manage.py runserver
 ```
+
+Приложение будет доступно по адресу: http://127.0.0.1:8000/
+
+## API эндпоинты
+
+| Путь | Описание |
+|---|---|
+| `/cats/` | CRUD для котиков |
+| `/users/` | Список пользователей |
+| `/achievements/` | CRUD для достижений |
+| `/auth/users/` | Регистрация (Djoser) |
+| `/auth/jwt/create/` | Получение JWT-токена |
+| `/auth/jwt/refresh/` | Обновление JWT-токена |
+| `/admin/` | Админ-панель Django |
+
+## Автор
+
+Проект создан в рамках обучения на Яндекс.Практикум.
